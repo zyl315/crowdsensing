@@ -17,27 +17,13 @@ P_DATA_MAX = 3
 # 待选集最大人员数
 C_NUM_MAX = 40
 # 感知任务时间T
-T = 17
+T = 30
 # 感知任务预算B
-B = 1000
+B = 200
 # 感知任务兴趣点集合
 P = Task.generate_points(P_NUM, P_X_MAX, P_Y_MAX, P_DATA_MAX)
 # 感知任务
 task = Task.Task(T, B, P)
-
-# 高信誉贡献高质量数据概率
-alpha = 0.5
-# 低信誉贡献高质量数据概率
-beta = 0.5
-# 选择参与者集合的平均信誉
-average_credit = 0
-
-# 信誉在[0,0.3)之间贡献高质量感知数据的概率
-p_low = 0.3
-# 信誉在[0.3,0.6)之间贡献高质量感知数据的概率
-p_medium = 0.5
-# 信誉在[0.6,1)之间贡献高质量感知数据的概率
-p_high = 0.8
 
 
 def online_quality_aware(time, budget, data):
@@ -53,6 +39,8 @@ def online_quality_aware(time, budget, data):
     m_selected = []
     # 一次感知任务中所有参与者集合
     m_all_selected = []
+
+    print('m_all_p %s' % len(m_all_p))
 
     while t <= time:
         # 新到达的参与者
@@ -78,28 +66,17 @@ def online_quality_aware(time, budget, data):
 
         # Paint.paint_dot(task, m_selected, P_X_MAX, P_Y_MAX)
         # 模拟被选择参与者执行任务,返回离开者集合
+
+        rate = task_complete_level()
+        print('t=%s' % t, "rate=%.4f" % rate, 'budget=%s' % budget, 'remain=%s' % len(m_selected),
+              'leave=%s' % len(m_all_selected), 'δ=%s' % delta_threshold)
+
         m_departure = run_task(m_selected, t)
         m_all_selected.extend(m_departure)
 
-        # 离开的参与者任务完成情况计算
-        for m in m_departure:
-            actual_value = 0
-            for p in m.actual_points:
-                actual_value += p.data
-            pre_value = utility_function(m_all_selected + [m]) - utility_function(m_all_selected)
-            # 实际完成的任务情况低于预估的情况
-            if actual_value < pre_value:
-                # 回报扣除
-                r_f = m.reward * (pre_value - actual_value) / pre_value
-                m.reward -= r_f
-                budget += r_f
-                print('reward deduct')
-
-        rate = task_complete_level()
-        print('t=', t, "%.4f" % rate, budget, len(m_selected), len(m_all_selected),
-              'average_credit=%s' % average_credit, delta_threshold)
+        # 阈值更新
         delta_threshold = TSM(m_departure, m_all_selected, budget, delta_threshold)
-
+        # 数据收集完成
         if delta_threshold <= 0:
             m_all_selected.extend(m_selected)
             m_selected.clear()
@@ -133,10 +110,7 @@ def utility_function(M):
         e_p = 0
         for m in M:
             if p in m.interest_points:
-                if m.credit >= average_credit:
-                    e_p += 1 * alpha
-                else:
-                    e_p += 1 * beta
+                e_p += 1 * np.sin(np.pi * 0.5 * m.credit)
         ans += min(p.data, e_p)
     return ans
 
@@ -164,25 +138,25 @@ def cal_g_ave_c_num(m_candidate):
 # 模拟被选择的参与者执行任务
 def run_task(m_selected, t):
     m_departure = list()
-    if t == 17:
+    if t == T:
         m_departure.extend(m_selected)
         m_selected.clear()
     for m in m_selected:
         # 用户已完成全部兴趣点的感知，用户离开
-        if len(m.interest_points) == 0:
+        if len(m.unfinished_points) == 0:
             m_departure.append(m)
-            print('\tid=%s complete leave' % m.id)
+            print('\tid=%s reward=%s complete leave' % (m.id, m.reward))
             break
         # 产生一个随机数，模拟用户随机离开，当前设置概率为0.2
         ran = random.random()
         if ran >= 0.1 or t == 1:
             # 在每一轮的时间里，一个参与者随机完成1-5个兴趣点的任务
             count = random.randint(1, 3)
-            count = min(count, len(m.interest_points))
+            count = min(count, len(m.unfinished_points))
             for i in range(count):
                 # 每次随机选取一个随机兴趣点
-                index = random.randint(0, len(m.interest_points) - 1)
-                p = m.interest_points[index]
+                index = random.randint(0, len(m.unfinished_points) - 1)
+                p = m.unfinished_points[index]
                 # 参与者与兴趣点的位置
                 distance = np.sqrt((m.position[0] - p.x) ** 2 + (
                         m.position[1] - p.y) ** 2)
@@ -195,11 +169,11 @@ def run_task(m_selected, t):
                 m.position = (p.x, p.y)
                 # # 添加到用户实际完成的兴趣点
                 m.actual_points.append(Task.Point(p.id, p.x, p.y, p.data))
-                # 从该用户感兴趣点集合中移除
-                m.interest_points.remove(p)
+                # 从该用户未完成的兴趣点集合中移除
+                m.unfinished_points.remove(p)
 
         else:
-            print('\tid=%s halfway leave' % m.id)
+            print('\tid=%s reward=%s halfway leave' % (m.id, m.reward))
             # 添加到任务离开者结合
             m_departure.append(m)
             # 模拟用户中途离开任务
@@ -223,55 +197,50 @@ def TSM(m_departure, m_all_selected, budget, delta_threshold):
     # complete_rate = task_complete_level()
     if len(m_departure) == 0:
         return delta_threshold
-    average_rate = 0
 
     for m in m_all_selected:
         rate = individual_level(m)
-        average_rate += rate
 
-    average_rate = average_rate / len(m_all_selected)
     global average_credit
 
     # 所有参与者的报酬总和
     actual_reward = 0
 
-    # 高信誉完成任务情况大于平均人数
-    alpha_num = 0
-    # 低信誉完成任务情况大于平均人数
-    beta_num = 0
-
     for m in m_departure:
-        individual_rate = individual_level(m)
-        if m.credit >= average_credit:
-            if individual_rate >= average_rate:
-                alpha_num += 1
-        else:
-            if individual_rate >= average_rate:
-                beta_num += 1
+        actual_value = 0
+        for _ in m.actual_points:
+            actual_value += 1
+        pre_value = utility_function(m_all_selected + [m]) - utility_function(m_all_selected)
+        # 实际完成的任务情况低于预估的情况
+        if actual_value < pre_value:
+            # 回报扣除
+            r_f = m.reward * (pre_value - actual_value) / pre_value
+            m.reward -= r_f
+            budget += r_f
+            print('\tid=%s reward deduct.' % m.id)
 
-        actual_reward += m.reward
         # 个人信誉更新函数
-        r_m = 0.5 * (4 / np.pi) * np.arctan((individual_rate - average_rate) / (average_rate + 0.00001))
-        tmp = m.credit + r_m
+        # r_m = min(0.5 * (4 / np.pi) * np.arctan((actual_value - pre_value) / (pre_value + 0.000000000001)), 0)
+        tmp = m.credit + min((actual_value - pre_value) / (pre_value + 0.000000000001), 0)
         tmp = min(1, tmp)
         tmp = max(-1, tmp)
-        m.credit = (1 / np.pi) * np.arcsin(tmp) + 0.5
+        m_credit = (1 / np.pi) * np.arcsin(tmp) + 0.5
 
-    # 平均信誉值更新
-    # average_credit = sum(list(map(lambda x: x.credit, m_departure))) / len(m_departure)
+        # User.update_user(m.uuid, m_credit)
 
-    if actual_reward <= 0:
-        k = 1
+        actual_reward += m.reward
+        print('\tid=%s,credit=%.4f, reward=%.4f,rate=%.4f' %
+              (m.id, m_credit, m.reward, individual_level(m)))
+
+    if actual_reward == 0:
+        k = 0
     else:
         k = (actual_utility_f(m_departure) - utility_function(m_departure)) / actual_reward
-
-    global alpha, beta
-    alpha = alpha_num / len(m_departure)
-    beta = beta_num / len(m_departure)
+    print('\tk=%s' % k)
 
     actual_data = 0
     for i in task.actual_points:
-        actual_data += i
+        actual_data += min(i, 2)
 
     new_delta_threshold = (1.1 ** k) * ((task.data - actual_data) / budget)
 
@@ -288,8 +257,8 @@ def task_complete_level():
 
 # 计算个人任务完成情况
 def individual_level(m):
-    req = np.array([1 for _ in range(len(m.actual_points) + len(m.interest_points))])
-    act = np.array(list(map(lambda x: min(x.data, 1), m.actual_points)) + len(m.interest_points) * [0])
+    req = np.array([1 for _ in range(len(m.interest_points))])
+    act = np.array(list(map(lambda x: min(x.data, 1), m.actual_points)) + len(m.unfinished_points) * [0])
     rate = 1 - cal_F(req - act) / cal_F(req)
     return rate
 
@@ -305,7 +274,7 @@ def actual_utility_f(M):
 
 
 if __name__ == '__main__':
-    online_quality_aware(17, 200, task.data)
+    online_quality_aware(T, B, task.data)
     print(list(map(lambda x: x.data, task.points)))
     print(task.actual_points)
     # u = User.add_new_user()

@@ -11,12 +11,6 @@ db = MySQLdb.connect("localhost", "root", "root", "crowdsensing", charset='utf8'
 
 # 参与者类
 class User:
-    # 参与者感知的兴趣点集合
-    interest_points = []
-    # 参与者实际完成的兴趣点
-    actual_points = []
-    # 参与者未完成的兴趣点
-    unfinished_points = []
     # 参与者要求感知任务的报酬
     reward = 0
     # 参与者位置
@@ -26,8 +20,11 @@ class User:
         self.id = _id
         self.uuid = uuid
         self.credit = credit
+        # 参与者感知的兴趣点集合
         self.interest_points = list()
+        # 参与者实际完成的兴趣点
         self.actual_points = list()
+        # 参与者未完成的兴趣点
         self.unfinished_points = list()
 
 
@@ -73,13 +70,12 @@ def insert_user(user):
 
 # 更新用户信息
 def update_user(uuid, credit):
-    sql = "update user set credit = %s where uuid = %s" % (credit, uuid)
+    sql = "update user set credit = %s where uuid = '%s'" % (credit, uuid)
     cursor = db.cursor()
     try:
         cursor.execute(sql)
         db.commit()
     except:
-        db.rowback()
         print("error: update user fail")
 
 
@@ -109,16 +105,17 @@ def generate_candidate(num, task, x_max, y_max, pb=0.1):
         length = len(task.points) - 1
         # 模拟参与者请求的感知兴趣点集合，随机选择
 
-        num = random.randint(1, 20)
+        num = random.randint(1, 30)
         # for p in task.points:
         #     dis = math.sqrt((p.x - u.position[0]) ** 2 + (p.y - u.position[1] ** 2))
         #     if dis < 10:
         #         u.interest_points.append(p)
         # print(len(u.interest_points))
         u.interest_points = random.sample(task.points, num)
+        u.unfinished_points = u.interest_points.copy()
 
         # 模拟参与者提出感知的报酬,随机给出
-        u.reward = random.randint(1, 10)
+        u.reward = random.randint(2, 10)
 
         # 模拟参与者随机位置
         x = random.randint(0, x_max)
