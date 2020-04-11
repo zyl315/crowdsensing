@@ -2,37 +2,45 @@ import Task
 import User
 import random
 import numpy as np
-import math
-import Paint
 
 # 兴趣点x轴最大范围
 P_X_MAX = 100
 # 兴趣点y轴最大范围
 P_Y_MAX = 100
-# 兴趣点个数
-P_NUM = 100
+# # 兴趣点个数
+# P_NUM = 100
 # 兴趣点最大数据量
-P_DATA_MAX = 3
+P_DATA_MAX = 2
 
-# 待选集最大人员数
-C_NUM_MAX = 40
+# # 待选集最大人员数
+# C_NUM_MAX = 40
 # 感知任务时间T
-T = 30
-# 感知任务预算B
-B = 200
-# 感知任务兴趣点集合
-P = Task.generate_points(P_NUM, P_X_MAX, P_Y_MAX, P_DATA_MAX)
+T = 0
+# # 感知任务预算B
+# B = 200
+# # 感知任务兴趣点集合
+# P = Task.generate_points(P_NUM, P_X_MAX, P_Y_MAX, P_DATA_MAX)
 # 感知任务
-task = Task.Task(T, B, P)
+task = None
+# 平均信誉
+average_credit = 0
 
 
-def online_quality_aware(time, budget, data):
+def init(t, b, p_num, c_num_max):
+    global task, T
+    p = Task.generate_points(p_num, P_X_MAX, P_Y_MAX, P_DATA_MAX)
+    T = t
+    task = Task.Task(t, b, p)
+    online_quality_aware(t, b, task.data, c_num_max)
+
+
+def online_quality_aware(time, budget, data, c_num):
     # 阈值
     delta_threshold = data / budget
     # 时间阶段
     t = 1
     # 记录的所有参与者
-    m_all_p = User.generate_candidate(C_NUM_MAX, task, P_X_MAX, P_Y_MAX)
+    m_all_p = User.generate_candidate(c_num, task, P_X_MAX, P_Y_MAX)
     # 感知任务待选集合
     m_candidate = []
     # 感知任务参与者选择集合
@@ -274,10 +282,6 @@ def actual_utility_f(M):
 
 
 if __name__ == '__main__':
-    online_quality_aware(T, B, task.data)
+    online_quality_aware(T, 200, task.data)
     print(list(map(lambda x: x.data, task.points)))
     print(task.actual_points)
-    # u = User.add_new_user()
-    # u.interest_points = Task.generate_points(5, P_X_MAX, P_Y_MAX, P_DATA_MAX)
-    #
-    # M = run_task([u])
