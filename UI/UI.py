@@ -45,6 +45,8 @@ def main_page():
         p_num = int(text3.get())
         c_num = int(text4.get())
         print(time, budget, p_num, c_num)
+        show_window()
+
         # init(time, budget, p_num, c_num)
 
     # 确认感知
@@ -52,6 +54,26 @@ def main_page():
     btn.place(x=140, y=130)
 
     root.mainloop()
+
+
+def show_window():
+    # top = tkinter.Toplevel()
+    # top.title('感知过程')
+
+    m1 = tkinter.PanedWindow(sashrelief='sunken', height=480, width=480)  # 默认是左右分布的
+    m1.pack(fill='both', expand=1)
+
+    left = tkinter.Label(m1, text='left pane')
+    m1.add(left)
+
+    m2 = tkinter.PanedWindow(orient='vertical', sashrelief='sunken')
+    m1.add(m2)
+
+    top = tkinter.Label(m2, text='top pane')
+    m2.add(top)
+
+    bottom = tkinter.Label(m2, text='bottom pane')
+    m2.add(bottom)
 
 
 if __name__ == '__main__':
