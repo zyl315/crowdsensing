@@ -2,6 +2,8 @@ import Task
 import User
 import random
 import numpy as np
+import Paint
+import UI.UI as ui
 
 # 兴趣点x轴最大范围
 P_X_MAX = 100
@@ -26,15 +28,15 @@ task = None
 average_credit = 0
 
 
-def init(t, b, p_num, c_num_max):
+def init(t, b, p_num, c_num_max, top):
     global task, T
     p = Task.generate_points(p_num, P_X_MAX, P_Y_MAX, P_DATA_MAX)
     T = t
     task = Task.Task(t, b, p)
-    online_quality_aware(t, b, task.data, c_num_max)
+    online_quality_aware(t, b, task.data, c_num_max, top)
 
 
-def online_quality_aware(time, budget, data, c_num):
+def online_quality_aware(time, budget, data, c_num, top):
     # 阈值
     delta_threshold = data / budget
     # 时间阶段
@@ -72,12 +74,15 @@ def online_quality_aware(time, budget, data, c_num):
             # 将该参与者添加进被选择集，移出待选集合
             m_candidate.remove(m)
 
-        # Paint.paint_dot(task, m_selected, P_X_MAX, P_Y_MAX)
+        Paint.paint_dot(task, m_selected, P_X_MAX, P_Y_MAX)
         # 模拟被选择参与者执行任务,返回离开者集合
 
         rate = task_complete_level()
         print('t=%s' % t, "rate=%.4f" % rate, 'budget=%s' % budget, 'remain=%s' % len(m_selected),
               'leave=%s' % len(m_all_selected), 'δ=%s' % delta_threshold)
+
+        # 展示执行任务窗口
+        ui.show_window(top, m_selected, m_all_selected, task, t, time, budget, rate)
 
         m_departure = run_task(m_selected, t)
         m_all_selected.extend(m_departure)
@@ -282,6 +287,6 @@ def actual_utility_f(M):
 
 
 if __name__ == '__main__':
-    online_quality_aware(T, 200, task.data)
+    init(1, 200, 100, 40)
     print(list(map(lambda x: x.data, task.points)))
     print(task.actual_points)
