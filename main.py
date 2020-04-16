@@ -2,8 +2,9 @@ import Task
 import User
 import random
 import numpy as np
-import Paint
-import UI.UI as ui
+import UI
+import time as times
+import copy
 
 # 兴趣点x轴最大范围
 P_X_MAX = 100
@@ -27,16 +28,26 @@ task = None
 # 平均信誉
 average_credit = 0
 
+# 界面显示
+result_dict = dict()
 
-def init(t, b, p_num, c_num_max, top):
+
+def begin():
+    app = UI.Application()
+    app.begin()
+    print()
+
+
+def init(t, b, p_num, c_num_max):
     global task, T
     p = Task.generate_points(p_num, P_X_MAX, P_Y_MAX, P_DATA_MAX)
     T = t
     task = Task.Task(t, b, p)
-    online_quality_aware(t, b, task.data, c_num_max, top)
+    res = online_quality_aware(t, b, task.data, c_num_max)
+    return res
 
 
-def online_quality_aware(time, budget, data, c_num, top):
+def online_quality_aware(time, budget, data, c_num):
     # 阈值
     delta_threshold = data / budget
     # 时间阶段
@@ -74,15 +85,14 @@ def online_quality_aware(time, budget, data, c_num, top):
             # 将该参与者添加进被选择集，移出待选集合
             m_candidate.remove(m)
 
-        Paint.paint_dot(task, m_selected, P_X_MAX, P_Y_MAX)
+        # Paint.paint_dot(task, m_selected, P_X_MAX, P_Y_MAX)
         # 模拟被选择参与者执行任务,返回离开者集合
 
         rate = task_complete_level()
         print('t=%s' % t, "rate=%.4f" % rate, 'budget=%s' % budget, 'remain=%s' % len(m_selected),
               'leave=%s' % len(m_all_selected), 'δ=%s' % delta_threshold)
 
-        # 展示执行任务窗口
-        ui.show_window(top, m_selected, m_all_selected, task, t, time, budget, rate)
+        result_dict[t] = [t, rate, budget, m_selected.copy(), m_all_selected.copy()]
 
         m_departure = run_task(m_selected, t)
         m_all_selected.extend(m_departure)
@@ -95,6 +105,7 @@ def online_quality_aware(time, budget, data, c_num, top):
             m_selected.clear()
             break
         t += 1
+    return result_dict
 
 
 # 添加新的参与者
@@ -287,6 +298,4 @@ def actual_utility_f(M):
 
 
 if __name__ == '__main__':
-    init(1, 200, 100, 40)
-    print(list(map(lambda x: x.data, task.points)))
-    print(task.actual_points)
+    begin()

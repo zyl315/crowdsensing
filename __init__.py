@@ -1,5 +1,5 @@
-from main import *
-from UI.UI import *
+import main as m
+
 
 if __name__ == '__main__':
-    main_page()
+    m.begin()
