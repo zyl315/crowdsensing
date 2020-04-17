@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def paint_dot(task, m, x_max, y_max):
+def paint_dot(task, m, x_max, y_max, t):
     fig = plt.figure(figsize=(5, 5))
     ax = fig.gca()
     ax.set_xticks(np.arange(0, x_max + 1, 5))
@@ -29,7 +29,10 @@ def paint_dot(task, m, x_max, y_max):
     # plt.grid(True)
     plt.rc('grid', linestyle="-", color='black')
 
-    plt.show()
+    # plt.show()
+    plt.savefig('img/%s.png' % t)
+    plt.close()
+    return fig
 
 
 if __name__ == '__main__':

@@ -3,6 +3,7 @@ import User
 import random
 import numpy as np
 import UI
+import Paint
 import time as times
 import copy
 
@@ -85,15 +86,15 @@ def online_quality_aware(time, budget, data, c_num):
             # 将该参与者添加进被选择集，移出待选集合
             m_candidate.remove(m)
 
-        # Paint.paint_dot(task, m_selected, P_X_MAX, P_Y_MAX)
+        img = Paint.paint_dot(task, m_selected, P_X_MAX, P_Y_MAX, t)
         # 模拟被选择参与者执行任务,返回离开者集合
 
         rate = task_complete_level()
         print('t=%s' % t, "rate=%.4f" % rate, 'budget=%s' % budget, 'remain=%s' % len(m_selected),
               'leave=%s' % len(m_all_selected), 'δ=%s' % delta_threshold)
+        result_dict[t] = [t, rate, budget, m_selected.copy(), m_all_selected.copy(), img]
 
-        result_dict[t] = [t, rate, budget, m_selected.copy(), m_all_selected.copy()]
-
+        # 模拟参与者执行任务
         m_departure = run_task(m_selected, t)
         m_all_selected.extend(m_departure)
 

@@ -1,6 +1,10 @@
 import tkinter as tk
+from tkinter import Label
+
 import main as m
 import threading
+from PIL import Image, ImageTk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 
 class Application:
@@ -16,6 +20,10 @@ class Application:
         self.title_info = None
         self.list_box1 = None
         self.list_box2 = None
+        self.frame_r = None
+        self.fig = None
+        self.can = None
+        self.img_label = None
 
         self.ans = None
 
@@ -79,7 +87,6 @@ class Application:
         top.resizable(0, 0)
 
         self.update_data()
-
         # 左边视图
         frame_l = tk.LabelFrame(self.top, relief='groove')
         frame_l.pack(side='left', fill='y')
@@ -105,6 +112,7 @@ class Application:
 
         frame_r = tk.LabelFrame(self.top, relief='groove')
         frame_r.pack(side='left', fill='y')
+        self.frame_r = frame_r
 
         frame_title = tk.LabelFrame(frame_r, relief='groove')
         frame_title.pack(side='top', fill='x')
@@ -128,10 +136,21 @@ class Application:
         btn1 = tk.Button(frame_title, text='>', command=add)
         btn1.pack(side='right')
 
-        global img
-        img = tk.PhotoImage(file="E:/Users/HP/PycharmProjects/crowdsensing/img/1.png")
-        lb4 = tk.Label(frame_r, image=img)
+        global img_png, img
+        img = Image.open('img/%s.png' % self._round)
+        img_png = ImageTk.PhotoImage(img)
+        lb4 = tk.Label(frame_r, image=img_png)
+        self.img_label = lb4
         lb4.pack(fill='both', expand=1)
+
+        # self.can = tk.Canvas()
+        # self.can = FigureCanvasTkAgg(self.fig, frame_r)
+        # self.can.draw()
+        # self.can.get_tk_widget().pack(fill='both', expand=1)
+
+        # im = tk.PhotoImage(self.fig)
+
+        self.top.after(500)
 
     def begin_sensing(self):
         self.ans = m.init(self.T, self.budget, self.p_num, self.c_num)
@@ -143,6 +162,7 @@ class Application:
         budget = self.ans[_round][2]
         m_selected = self.ans[_round][3]
         m_all_selected = self.ans[_round][4]
+        self.fig = self.ans[_round][5]
 
         # 更新标题
         if self.title_info is None:
@@ -168,12 +188,20 @@ class Application:
             l_box2.append(str_1)
         self.list_box2.set(tuple(l_box2))
 
+        # 更新图片
+        if self.img_label is not None:
+            global img_png, img
+            img = Image.open('img/%s.png' % self._round)
+            img_png = ImageTk.PhotoImage(img)
+            self.img_label.configure(image=img_png)
+
     def begin(self):
         self.create_main_window()
         self.root.mainloop()
 
-    def destroy(self):
-        self.root.destory()
+
+def destroy(self):
+    self.root.destory()
 
 
 if __name__ == '__main__':
