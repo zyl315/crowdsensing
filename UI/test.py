@@ -46,13 +46,19 @@ root = tkinter.Tk()
 label1 = tkinter.Label(root, text='init...')
 label1.pack()
 
+list_box1 = tkinter.Listbox(root)
+list_box1.pack()
+
 
 def threadGetPrice():
     while True:
         t1 = 3
         while t1 > 0:
             t1 -= 1
-            label1['text'] = getPrice()
+            tmp = tkinter.Variable(value=getPrice())
+            label1['textvariable'] = tmp
+
+            list_box1['listvariable'] = tkinter.Variable(value=tuple([t1]))
             time.sleep(1)
 
         if t1 == 0:

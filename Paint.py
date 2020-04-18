@@ -18,15 +18,19 @@ def paint_dot(task, m, x_max, y_max, t):
     ax.spines['bottom'].set_visible(False)
     ax.spines['left'].set_visible(False)
 
-    x = map(lambda point: point.x, task.points)
-    y = map(lambda point: point.y, task.points)
+    x = []
+    y = []
 
-    plt.scatter(list(x), list(y), alpha=0.5)
+    for i in range(len(task.points)):
+        if task.actual_points[i] < 2:
+            x.append(task.points[i].x)
+            y.append(task.points[i].y)
+    plt.scatter(x, y, alpha=0.5)
 
     x1 = map(lambda user: user.position[0], m)
     y1 = map(lambda user: user.position[1], m)
     plt.scatter(list(x1), list(y1))
-    # plt.grid(True)
+
     plt.rc('grid', linestyle="-", color='black')
 
     # plt.show()

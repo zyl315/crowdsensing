@@ -172,7 +172,7 @@ def run_task(m_selected, t):
             m_departure.append(m)
             print('\tid=%s reward=%s complete leave' % (m.id, m.reward))
             break
-        # 产生一个随机数，模拟用户随机离开，当前设置概率为0.2
+        # 产生一个随机数，模拟用户随机离开，当前设置概率为0.1
         ran = random.random()
         if ran >= 0.1 or t == 1:
             # 在每一轮的时间里，一个参与者随机完成1-5个兴趣点的任务
